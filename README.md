@@ -1,93 +1,287 @@
-# gl-2-gh-dr-migration
+# GitLab → GitHub Migration Pipeline
 
+## 1. Overview
+This repository contains a **GitLab CI/CD pipeline** that automates the migration of repositories from a **self-hosted GitLab Server** to **GitHub** using **GitLab migration archives** and **migration scripts**.
 
+At a high level, the pipeline:
+- Generates GitLab export (migration) archives
+  (**Note:** GitHub object storage is used as a temporary staging location for migration archives (up to 30 GB supported).)
+- Uploads those archives to GitHub storage
+- Triggers GitHub repository migrations
+- Preserves logs and artifacts for audit and troubleshooting
 
-## Getting started
+## 2. Requirements
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### 2.1 GitLab Runner Host Requirements
+- **OS:** Ubuntu
+- **Docker:** latest stable
+- **Node.js:** v20+
+- **npm:** v10+
+- **Docker image:** `gl-exporter`
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### 2.2 Access Requirements
+- **Password-less sudo** configured for the user running the **GitLab Runner** process
+- **GitLab access** to:
+  - View migration scripts stored in the project
+  - Trigger the pipeline
+  - Monitor the migration pipeline
 
-## Add your files
+### 2.3 Required Token Scopes
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+#### GitLab API Token
+- Must be generated using an **admin user**
+- Required permissions: **full API access**
+- Used by `gl-exporter` during archive generation
 
+#### GitHub Personal Access Token (PAT)
+Required scopes:
+- `repo`
+- `admin:org`
+- `workflow`
+- `user`
+
+### 2.4 Enable GitHub Object Storage Feature Flag
+- GitHub object storage feature flag must be enabled both for GitHub handle and GitHub organizations. Raise a request with GitHub Support to enable this feature.
+
+## 3. Repository Contents
+    .
+    ├── .gitlab-ci.yml
+    ├── README.md
+    ├── docs/
+    │   ├── images/
+    │   │   └── GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.png
+    │   └── diagrams/
+    │       └── GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.txt
+    ├── config.sh
+    ├── runner.sh
+    ├── generate-gl-migration-archive.sh
+    ├── upload-gl-migration-archive.sh
+    ├── start-gl2gh-repo-migration.sh
+    ├── gl-post-migration-validation.sh
+    ├── gitlab-stats-sample.csv
+    └── migration_scripts/
+        ├── batch.js
+        ├── create-env-vars.js
+        ├── create-migration-source.js
+        ├── gh-api.js
+        ├── index.js
+        ├── issue.js
+        ├── migration.js
+        ├── package.json
+        ├── repository.js
+        ├── start-repo-migration.js
+        ├── state.js
+        ├── team.js
+        ├── upload-to-github-blob.sh
+        ├── user.js
+        └── workflow.js
+
+## 4. Scripts and Purpose
+
+### 4.1 Shell scripts
+| Script | Purpose |
+|------|---------|
+| `config.sh` | Contains shared / generic variables used by multiple scripts. |
+| `runner.sh` | Runner helper / wrapper script (used to execute the workflow in the runner environment). |
+| `generate-gl-migration-archive.sh` | Generates GitLab migration archives (exports) for repositories defined in the inventory. |
+| `upload-gl-migration-archive.sh` | Uploads the generated archives to GitHub storage (used later by migration jobs). |
+| `start-gl2gh-repo-migration.sh` | Triggers repository migrations in GitHub. |
+| `gl-post-migration-validation.sh` | Compares branch and commit counts between GitLab and GitHub to validate migration. This script is not part of the CI/CD pipeline and must be run manually after migration completes. |
+
+### 4.2 Scripts in `migration_scripts/` directory
+This directory contains JavaScript modules used to orchestrate GitHub migration operations.
+
+| List of JS scripts |
+|------|
+| `batch.js` |
+| `create-env-vars.js` |
+| `create-migration-source.js` |
+| `gh-api.js` |
+| `index.js` |
+| `issue.js` |
+| `migration.js` |
+| `repository.js` |
+| `start-repo-migration.js` |
+| `state.js` |
+| `team.js` |
+| `user.js` |
+| `workflow.js` |
+| `upload-to-github-blob.sh` |
+
+## 5. Inventory File (Repository Mapping)
+The inventory file defines the scope of GitLab repositories to be migrated and their target mappings in GitHub.
+
+### 5.1 Generate inventory CSV
+Before triggering the pipeline, generate an inventory file using the GitHub CLI extension `gitlab-stats`:
+
+```bash
+gh gitlab-stats --hostname "$SOURCE_GL_SERVER_URL" --token "$GITLAB_API_PRIVATE_TOKEN" --namespace <gitlab-group>
 ```
-cd existing_repo
-git remote add origin http://20.84.89.88/gl2gh-migration/gl-2-gh-dr-migration.git
-git branch -M main
-git push -uf origin main
+
+This produces a CSV inventory of repositories.
+
+### 5.2 Edit inventory CSV
+After generation, edit the CSV and add two columns:
+- `github_org`
+- `github_repo`
+
+Fill in the target GitHub organization and repository name for each row.
+
+#### Example Inventory CSV
+
+| Namespace | Project | Is_Empty | isFork | isArchive | Project_Size(mb) | LFS_Size(mb) | Collaborator_Count | Protected_Branch_Count | MR_Review_Count | Milestone_Count | Issue_Count | MR_Count | MR_Review_Comment_Count | Commit_Count | Issue_Comment_Count | Release_Count | Branch_Count | Tag_Count | Has_Wiki | Full_URL | Created | Last_Push | Last_Update | github_org | github_repo |
+| -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
+| group-migration2gh/sub-group-migration2gh | demo-project-2 | false | false | false | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 1 | 0 | false | http://20.84.89.88/group-migration2gh/sub-group-migration2gh/demo-project-2 | 2025-12-18T14:21:09Z | 2025-12-19T11:20:27Z | 2025-12-19T11:20:27Z | kcghorg | demoproject2 |
+| group-migration2gh/sub-group-migration2gh | demo-project-1 | false | false | false | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 1 | 1 | 22 | 0 | 0 | 2 | 2 | false | http://20.84.89.88/group-migration2gh/sub-group-migration2gh/demo-project-1 | 2025-12-18T14:20:05Z | 2025-12-19T11:20:05Z | 2025-12-19T11:20:05Z | kcghorg | demoproject1 |
+
+**Notes**
+- Columns `github_org` and `github_repo` must be populated before running the pipeline.
+- Upload the CSV to the GitLab project.
+- This file name will be passed as the `INVENTORY_FILE` user input when running the pipeline.
+
+### 5.3 Upload inventory to GitLab project
+Upload the updated CSV into the GitLab project (so the pipeline can access it).
+
+## 6. CI/CD Variable Setup (GitLab)
+Configure CI/CD variables in:
+**GitLab Project → Settings → CI/CD → Variables**
+
+Add the following variables:
+
+| Key | Example value | Description | Visibility |
+|--------|-------------|--------|-------------|
+| `SOURCE_GL_SERVER_URL` | `https://gitlab.company.com` | GitLab Server URL | Visible |
+| `GITLAB_USERNAME` | `gitlab-user` | GitLab username | Visible |
+| `GITLAB_API_PRIVATE_TOKEN` | `glpat-xxxxxxx` | GitLab API private token | Masked and hidden |
+| `GH_PAT` | `ghp_xxxxx` | GitHub Personal Access Token | Masked and hidden |
+
+## 7. Pipeline Flow
+1. Validate CI/CD inputs, configuration, and prerequisites
+2. Generate GitLab repository migration archives
+3. Upload migration archives to GitHub-managed storage
+4. Initiate GitHub repository migrations using uploaded archives
+5. Display final migration summary (successes, failures, and migration IDs)
+6. Preserve logs, reports, and outputs as pipeline artifacts
+
+![GitLab Pipeline Flow](docs/images/GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.png)
+
+**Figure 1:** GitLab → GitHub migration pipeline showing validation, artifact staging, migration execution, and summary reporting.
+
+### 7.1 Runner Tag Configuration
+- This pipeline uses the GitLab Runner tag **`GLMigration`** to select the appropriate runner for execution.
+- The runner tag **must be updated to match the GitLab Runner configured in your environment**.
+
+#### Example
+If your GitLab Runner is registered with the tag:
+- `gitlab-runner-dev`
+
+Then update the `tags:` section in `.gitlab-ci.yml` to match the runner tag for that environment.
+
+```yaml
+  tags: ["gitlab-runner-dev"]
 ```
 
-## Integrate with your tools
+### 7.2 Pipeline Trigger
+The pipeline is **manually triggered** from GitLab Web UI and controlled using `workflow: rules`.
 
-* [Set up project integrations](http://20.84.89.88/gl2gh-migration/gl-2-gh-dr-migration/-/settings/integrations)
+### 7.3 Executing the Pipeline
+1. Open the GitLab project
+2. Navigate to **Build → Pipelines**
+3. Select **New Pipeline**
+4. Provide the inventory filename as a variable:
+   - Input: `INVENTORY_FILE`
+   - Value: `<your-inventory-file>.csv`
+5. Select **New Pipeline** to start
 
-## Collaborate with your team
+### 7.4 Artifacts and Retention
+The pipeline uploads artifacts (retained for **7 days**) to support troubleshooting, including:
+- Output files
+- Migration logs
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## 8. Monitoring Migration
+- The pipeline outputs **GitHub migration IDs** for each repository
+- Monitor migration progress using the GitHub CLI **migration-monitor** extension:
 
-## Test and Deploy
+```bash
+gh migration-monitor --organization $GH_ORG --github-token $GH_PAT
+```
 
-Use the built-in continuous integration in GitLab.
+## 9. Post Migration Validation
+- Run the below steps to perform migration validation
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```bash
+export INVENTORY_FILE="<your-inventory-file>.csv"
+export GH_TOKEN="<github_pat>"
+./gl-post-migration-validation.sh
+```
 
-***
+- This script validates migration accuracy by comparing branch counts, commit counts, and repository metadata between GitLab and the corresponding GitHub repositories using the GitHub API.
 
-# Editing this README
+## 10. User Identity Mapping (Mannequins)
+- During migration, GitHub creates **mannequins** for users that cannot be automatically mapped.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### 10.1 Generate Mannequin CSV
+- Generate a mannequin mapping file for the organization using command:
 
-## Suggestions for a good README
+```bash
+gh ado2gh generate-mannequin-csv --github-org "{github-org}"
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### 10.2 Update Mannequin Mapping
+- Open `mannequins.csv`
+- Populate the **Target User** column with valid GitHub usernames
 
-## Name
-Choose a self-explaining name for your project.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+#### Mannequins User Mapping Example
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+The following table shows an example of a **Mannequins CSV** used for user identity mapping after migration.  
+Each GitLab user (represented as a mannequin in GitHub) is mapped to the corresponding GitHub user.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+| mannequin-user | mannequin-id      | target-user   |
+|----------------|-------------------|---------------|
+| gluser1        | M_kgDODtfbRA      | github-user1  |
+| gluser2        | M_kgDODtfbRg      | github-user2  |
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+**Explanation:**
+- During migration, unmapped GitLab users are imported into GitHub as **mannequins**.
+- The `target-user` column is updated with the correct GitHub username.
+- This mapping is later used to reclaim mannequins and correctly associate commits, issues, and comments with real GitHub users.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 10.3 Reclaim Mannequins
+- Reclaims mannequins by mapping them to the correct GitHub users. (Update the Mannequin CSV with Target User)
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```bash
+gh ado2gh reclaim-mannequin --github-org "{github-org}" --csv $CSV_FILE --skip-invitation
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## Appendix
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### Installing GitHub CLI extensions
+- Login to GitHub using command:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```bash
+gh auth login
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+- Install `gh-stats` GitHub CLI Extension:
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+gh extension install mona-actions/gh-gitlab-stats
+```
 
-## License
-For open source projects, say how it is licensed.
+- Install `gh-migration-monitor` GitHub CLI Extension:
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```bash
+gh extension install mona-actions/gh-migration-monitor
+```
+
+- Install `gh-ado2gh` GitHub CLI Extension:
+
+```bash
+gh extension install github/gh-ado2gh
+```
+
+### Build `gl-exporter` docker image
+- Clone the 'gl-exporter' GitHub repository:
+  `https://github.com/githubcustomers/msft-factory-gl-exporter/tree/master`
+- Use the provided Dockerfile in the repository to build the `gl-exporter` Docker image.

@@ -1,0 +1,91 @@
+title GitLab‑to‑GitHub Migration - CI Pipeline Workflow
+direction right
+
+// Nodes and groups
+Trigger Migration Pipeline [shape: oval, color: lightblue, icon: play]
+Validate Pipeline Trigger Source [shape: diamond, color: orange, icon: gitlab]
+Skip Pipeline Execution [shape: oval, color: gray, icon: x-square]
+GitLab Runner [icon: server, color: purple]
+Start Pipeline [icon: check-circle, color: , shape: square] {
+  Initialization Steps [icon: check-circle, color: , shape: square] {
+  User Input  [shape: rectangle, color: yellow, icon: User]
+  Set Global Variables  [shape: rectangle, color: yellow, icon: Variables]
+  Define Workflow Rules  [shape: rectangle, color: yellow, icon: Workflow]
+  Cache NPM Dependencies [shape: rectangle, color: yellow, icon: package]
+  }
+  Pipeline Stages [icon: check-circle, color: purple, shape: square] {
+    Validate Prerequisites [icon: check-circle, color: blue, shape: oval] {
+      Check Required Environment Variables [icon: alert-triangle, color: blue]
+      Check Required Scripts [icon: file-text, color: blue]
+      Install NPM Packages (If Cache Miss) [icon: npm, color: red]
+      List Installed NPM Packages [icon: list, color: blue]
+    }
+    Generate Migration Archives [icon: archive, shape: oval, color: blue ] {
+      Set Environment Variables_1 [icon: settings, color: green, label: "Set Environment Variables"]
+      Make Scripts Executable_1 [icon: check, color: green, label: "Make Scripts Executable"]
+      Run Generate Migration Archive Script [icon: play-circle, color: green]
+      Extract Generated Archive List [icon: file, color: green]
+      Store Artifacts_1 [icon: upload, color: green, label: "Store Outputs as Artifacts"]
+    }
+    Upload Migration Archives [icon: upload-cloud, color: orange] {
+      Set Environment Variables_2 [icon: settings, color: orange, label: "Set Environment Variables"]
+      Make Scripts Executable_2 [icon: check, color: orange, label: "Make Scripts Executable"]
+      Rewrite Archive List File Path [icon: edit, color: orange]
+      Run Upload Migration Archive Script [icon: play-circle, color: orange]
+      Extract Uploaded Archives [icon: file, color: orange]
+      Store Artifacts_2 [icon: upload, color: orange, label: "Store Outputs as Artifacts"]
+    }
+    Start Repository Migration [icon: git-branch, color: purple] {
+      Set Environment Variables_3 [icon: settings, color: purple, label: "Set Environment Variables"]
+      Make Scripts Executable_3 [icon: check, color: purple, label: "Make Scripts Executable"]
+      Rewrite Uploaded Archives Path [icon: edit, color: purple]
+      Run Repository Migration Script [icon: play-circle, color: purple]
+      Store Artifacts_3 [icon: upload, color: purple, label: "Store Outputs as Artifacts"]
+    }
+    Display Final Summary [icon: bar-chart-2, color: teal] {
+      Extract Success and Failure Metrics [icon: check-square, color: teal]
+      Print Final Summary [icon: printer, color: teal]
+      Highlight Failures [icon: alert-circle, color: red]
+      Print Migration IDs and Monitoring Info [icon: info, color: teal]
+      Store Artifacts_4 [icon: upload, color: teal, label: "Store Outputs as Artifacts"]
+    }
+    Validate Prerequisites Failed? [color: grey]
+    Exit on Prerequisite Validation Failure [color: red]
+    Generate Migration Archives Failed? [color: grey]
+    Exit on Archive Generation Failure  [color: red]
+    Upload Migration Archives Failed? [color: grey]
+    Exit on Upload Failure  [color: red]
+    Start Repository Migration Failed? [color: grey]
+    Exit on Migration Failure  [color: red]
+    Display Final Summary Failed? [color: grey]
+    Exit on Summary Generation Failure  [color: red]
+    // External systems
+    GitHub (Target System) [icon: github, color: black]
+  }
+  End Pipeline [shape: oval, color: lightgreen, icon: check]
+}
+
+// Relationships
+Trigger Migration Pipeline > Validate Pipeline Trigger Source
+Validate Pipeline Trigger Source > Skip Pipeline Execution: Not web [color: gray]
+Validate Pipeline Trigger Source > Start Pipeline: Web [color: blue]
+Initialization Steps > Pipeline Stages
+Validate Prerequisites > Validate Prerequisites Failed?
+Validate Prerequisites Failed? > Exit on Prerequisite Validation Failure: Yes [color: red]
+Validate Prerequisites Failed? > Generate Migration Archives: No [color: green]
+Generate Migration Archives > Generate Migration Archives Failed?
+Generate Migration Archives Failed? > Exit on Archive Generation Failure: Yes [color: red]
+Generate Migration Archives Failed? > Upload Migration Archives: No [color: green]
+Upload Migration Archives > Upload Migration Archives Failed?
+Upload Migration Archives Failed? > Exit on Upload Failure: Yes [color: red]
+Upload Migration Archives Failed? > Start Repository Migration: No [color: green]
+Start Repository Migration > Start Repository Migration Failed?
+Start Repository Migration Failed? > Exit on Migration Failure: Yes [color: red]
+Start Repository Migration Failed? > Display Final Summary: No [color: green]
+Display Final Summary > Display Final Summary Failed?
+Display Final Summary Failed? > Exit on Summary Generation Failure: Yes [color: red]
+Display Final Summary Failed? > End Pipeline: No [color: green]
+// External systems
+Upload Migration Archives > GitHub (Target System)
+Start Repository Migration > GitHub (Target System)
+Start Pipeline > GitLab Runner

@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+# -e: exit immediately if a command exits with a non-zero status.
+# -u: treat unset variables as an error and exit.
+# -o pipefail: if any command in a pipeline fails, the whole pipeline fails.
+
+# --- Config ---> # Set script base path and load env from config.sh.
+SCRIPT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
+
+RUN_TS="$(date +"%Y%m%d_%H%M%S")"
+LOG_FILE="${CREATE_ARCHIVE_LOG}_${RUN_TS}.log"
+mkdir -p "$LOG_DIR"
+
+# Save all stdout+stderr to logfile AND still show on terminal
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# --- Folders ---> # Ensure working and artifacts folders exist (create if missing).
+mkdir -p "$WORKDIR" "$ARTIFACTS_DIR"
+
+# --- Output list file ---> # Timestamp to make output filenames unique per run.
+SUCCESS_LIST_FILE="$ARTIFACTS_DIR/archive-lists_${RUN_TS}.csv"
+
+# Write CSV header: group, project, and the generated archive path.
+echo '"gitlab_group","gitlab_project","archive_file","github_org","github_repo"' > "$SUCCESS_LIST_FILE"
+
+# --- Basic checks ---> # Ensure the inventory CSV exists and docker image exists.
+if [[ ! -s "$INVENTORY_FILE" ]]; then
+  echo "[ERROR] Inventory file '$INVENTORY_FILE' missing or empty"
+  exit 1
+else
+  echo "[INFO] Using Inventory file: $INVENTORY_FILE"
+fi
+
+if ! sudo docker image inspect "$GL_EXPORTER_IMAGE" >/dev/null 2>&1; then
+  echo "[ERROR] $GL_EXPORTER_IMAGE not found"
+  exit 1
+fi
+
+# --- Helpers ---# String for filenames: - replace / or \ and spaces with underscores
+file_safe() { echo "$1" | tr '/ ' '_' ; }
+
+# Counters for total rows, success and fails and array to capture failed list
+total=0
+skipped=0
+ok=0
+fail=0
+declare -a failed=()
+
+# --- Read header to find columns, split by command and find the index value
+header="$(head -n 1 "$INVENTORY_FILE" | tr -d '\r')"
+IFS=',' read -r -a cols <<< "$header"
+
+find_col() {
+  # Finds the column index in 'cols[]' whose value exactly matches $1.
+  # Loops through header array; if match found, prints index (0,1,2…) and returns 0, else returns 1.
+  # Example: cols[0]="Namespace" → find_col Namespace → prints 0
+  # Example: cols[1]="Project" → find_col Project → prints 1
+  local name="$1"
+  for i in "${!cols[@]}"; do
+    [[ "${cols[$i]}" == "$name" ]] && echo "$i" && return 0
+  done
+  return 1
+}
+
+# --- Validate headers ---
+array_of_err_messages=()
+
+NS_IDX="$(find_col "Namespace")" || array_of_err_messages+=("[ERROR] Missing required header: Namespace")
+PR_IDX="$(find_col "Project")"   || array_of_err_messages+=("[ERROR] Missing required header: Project")
+GH_ORG_IDX="$(find_col "github_org")" || array_of_err_messages+=("[ERROR] Missing required header: github_org")
+GH_REPO_IDX="$(find_col "github_repo")" || array_of_err_messages+=("[ERROR] Missing required header: github_repo")
+
+if ((${#array_of_err_messages[@]})); then
+  {
+    printf '%s\n' "${array_of_err_messages[@]}"
+    echo "[ERROR] Header must contain 'Namespace', 'Project', 'github_org', 'github_repo' "
+  } >&2
+  exit 1
+fi
+
+# --- Generate CSV for projects in each row ---
+while IFS= read -r raw; do
+  line="$(echo "$raw" | tr -d '\r')"  # Read a line and strip any Windows CR.
+  IFS=',' read -r -a flds <<< "$line"    # Split the line into fields by comma.
+
+  ns="$(echo "${flds[$NS_IDX]:-}")"   # Extract Namespace value (blank if missing).
+  pr="$(echo "${flds[$PR_IDX]:-}")"   # Extract Project value (blank if missing).
+  github_org="$(echo "${flds[$GH_ORG_IDX]:-}")"   # Extract Github Org name (blank if missing).
+  github_repo="$(echo "${flds[$GH_REPO_IDX]:-}")"   # Extract Github repo name (blank if missing).
+
+  total=$((total + 1))   # Increment total rows processed.
+
+  [[ -z "$ns" || -z "$pr" || -z "$github_org" || -z "$github_repo"  ]] && skipped=$((skipped+1)) && echo "[WARN] Row: ${total} - Skipping due to missing headers: gitlab_group='${ns}' gitlab_project='${pr}' github_org='${github_org}' github_repo='${github_repo}'" && continue   # Skip rows that don’t have both Namespace and Project.
+
+  # Name of the output archive for this project.
+  safe_ns="$(file_safe "$ns")"
+  safe_pr="$(file_safe "$pr")"
+  out_tar="migration_archive_${safe_ns}_${safe_pr}.tar.gz"
+
+  echo "[INFO] Exporting: $ns / $pr -> $WORKDIR/$out_tar"
+
+  # Temporary CSV passed to gl-exporter for just this project.
+  tmp_csv="$WORKDIR/export_tmp.csv"
+  printf '%s,%s\n' "$ns" "\"$pr\"" > "$tmp_csv"
+
+    # Run gl-exporter in Docker:
+    #  - Pass API endpoint, username, and token via environment.
+    #  - Mount WORKDIR at /workspace so exporter can read/write files.
+    #  - Input CSV: /workspace/export_tmp.csv
+    #  - Output archive: /workspace/<out_tar>
+  if sudo docker run --rm \
+      -e GITLAB_API_ENDPOINT="$GITLAB_API_ENDPOINT" \
+      -e GITLAB_USERNAME="$GITLAB_USERNAME" \
+      -e GITLAB_API_PRIVATE_TOKEN="$GITLAB_API_PRIVATE_TOKEN" \
+      -v "$WORKDIR":/workspace \
+      "$GL_EXPORTER_IMAGE" \
+      gl_exporter -f "/workspace/$(basename "$tmp_csv")" -o "/workspace/$out_tar" >>"$LOG_FILE" 2>&1
+  then
+    echo "\"$ns\",\"$pr\",\"$WORKDIR/$out_tar\",\"$github_org\",\"$github_repo\"" >> "$SUCCESS_LIST_FILE"  # Append a success record to the output CSV (quoted values).
+    ok=$((ok + 1))  # Increment success count.
+  else
+    echo "[ERROR] FAILED: $ns/$pr"  # Log failure for this Namespace/Project.
+
+    failed+=("$ns/$pr")     # Record the failed item for summary output.
+    fail=$((fail + 1))      # Increment failure count.
+  fi
+  rm -f "$tmp_csv"  # Clean up the temporary per-row CSV.
+
+done < <(tail -n +2 "$INVENTORY_FILE")
+
+# --- Summary ---
+echo
+echo "Summary:"
+echo "  Total   : $total"
+echo "  Skipped : $skipped"
+echo "  Success : $ok"
+echo "  Failed  : $fail"
+if (( fail > 0 )); then
+  echo "Failed list:"
+  for f in "${failed[@]}"; do echo "  - $f"; done
+fi
+echo
+echo "List of gitlab projects processed: $SUCCESS_LIST_FILE"
+echo "Archives are created in: $WORKDIR"
+echo "Detailed logs written to $LOG_FILE"
+echo
+
+echo "Run the below command to set env variable before running next script"
+echo "export ARCHIVE_LIST=$SUCCESS_LIST_FILE"
+echo
+
