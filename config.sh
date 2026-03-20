@@ -1,10 +1,7 @@
 ############################################################
 # CONFIG GITHUB URL 
 ############################################################
-#GITHUB_TYPE=GitHub
-
-# For GitHub Cloud with Data Residency,comment the above line and uncomment the below line
-GITHUB_TYPE=GitHubDR
+GITHUB_TYPE=GitHub
 
 ############################################################
 # COMMON VARIABLES (used by all scripts)
@@ -22,6 +19,7 @@ GITLAB_API_ENDPOINT="${SOURCE_GL_SERVER_URL}/api/v4"
 GL_EXPORTER_IMAGE="gl-exporter"
 GITHUB_UPLOAD_SCRIPT="$MIGRATION_SCRIPTS/upload-to-github-blob.sh"
 AZURE_UPLOAD_SCRIPT="$MIGRATION_SCRIPTS/upload-to-azure-blob.sh"
+AWS_UPLOAD_SCRIPT="$MIGRATION_SCRIPTS/upload-to-aws-blob.sh"
 GITHUB_ENV="$ARTIFACTS_DIR/github_env.txt"
 
 # --- Runner script to invoke JS scripts

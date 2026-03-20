@@ -308,7 +308,7 @@ print_summary() {
     done
   fi
   if [[ ${FAIL} -gt 0 ]]; then
-    echo "Failed: ${FAIL}"
+    echo "Failed			  :   ${FAIL}"
     echo "See failures in: ${MIGRATION_FAILURE_FILE}"
   fi
   echo ""
