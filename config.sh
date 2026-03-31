@@ -1,7 +1,8 @@
 ############################################################
 # CONFIG GITHUB URL 
 ############################################################
-GITHUB_TYPE=GitHub
+GITHUB_TYPE=GitHubDR
+DISABLE_SSL=Y
 
 ############################################################
 # COMMON VARIABLES (used by all scripts)

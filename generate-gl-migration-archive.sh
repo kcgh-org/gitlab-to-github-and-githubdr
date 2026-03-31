@@ -71,6 +71,7 @@ NS_IDX="$(find_col "Namespace")" || array_of_err_messages+=("[ERROR] Missing req
 PR_IDX="$(find_col "Project")"   || array_of_err_messages+=("[ERROR] Missing required header: Project")
 GH_ORG_IDX="$(find_col "github_org")" || array_of_err_messages+=("[ERROR] Missing required header: github_org")
 GH_REPO_IDX="$(find_col "github_repo")" || array_of_err_messages+=("[ERROR] Missing required header: github_repo")
+FULL_URL_IDX="$(find_col "Full_URL")" || array_of_err_messages+=("[ERROR] Missing required header: Full_URL")
 
 if ((${#array_of_err_messages[@]})); then
   {
@@ -94,6 +95,27 @@ while IFS= read -r raw; do
 
   [[ -z "$ns" || -z "$pr" || -z "$github_org" || -z "$github_repo"  ]] && skipped=$((skipped+1)) && echo "[WARN] Row: ${total} - Skipping due to missing headers: gitlab_group='${ns}' gitlab_project='${pr}' github_org='${github_org}' github_repo='${github_repo}'" && continue   # Skip rows that don’t have both Namespace and Project.
 
+
+  # Extract Project name slug
+  full_url="$(echo "${flds[$FULL_URL_IDX]:-}")"
+
+  if [[ -z "$full_url" ]]; then
+    echo "[ERROR] Row: ${total} - Full_URL is empty. Cannot resolve project slug for '$ns / $pr'"
+    fail=$((fail + 1))
+    failed+=("$ns/$pr")
+    continue
+  fi
+
+  # Resolve correct GitLab project slug from Full_URL
+  resolved_pr="$(basename "$full_url")"
+
+  # Override project name ONLY if it contains spaces or mismatch
+  if [[ "$pr" == *" "* || "$pr" != "$resolved_pr" ]]; then
+    echo "[INFO] Resolved project name: '$pr' -> '$resolved_pr'"
+    pr="$resolved_pr"
+  fi
+
+
   # Name of the output archive for this project.
   safe_ns="$(file_safe "$ns")"
   safe_pr="$(file_safe "$pr")"
@@ -110,13 +132,22 @@ while IFS= read -r raw; do
     #  - Mount WORKDIR at /workspace so exporter can read/write files.
     #  - Input CSV: /workspace/export_tmp.csv
     #  - Output archive: /workspace/<out_tar>
+
+    # Check if SSL is disabled
+    SSL_OPTS=""
+
+    if [[ "${DISABLE_SSL:-N}" == "Y" ]]; then
+      SSL_OPTS="--ssl-no-verify"
+      echo "[INFO] SSL verification disabled for gl-exporter"
+    fi
+
   if sudo docker run --rm \
       -e GITLAB_API_ENDPOINT="$GITLAB_API_ENDPOINT" \
       -e GITLAB_USERNAME="$GITLAB_USERNAME" \
       -e GITLAB_API_PRIVATE_TOKEN="$GITLAB_API_PRIVATE_TOKEN" \
       -v "$WORKDIR":/workspace \
       "$GL_EXPORTER_IMAGE" \
-      gl_exporter -f "/workspace/$(basename "$tmp_csv")" -o "/workspace/$out_tar" >>"$LOG_FILE" 2>&1
+      gl_exporter $SSL_OPTS -f "/workspace/$(basename "$tmp_csv")" -o "/workspace/$out_tar" >>"$LOG_FILE" 2>&1
   then
     echo "\"$ns\",\"$pr\",\"$WORKDIR/$out_tar\",\"$github_org\",\"$github_repo\"" >> "$SUCCESS_LIST_FILE"  # Append a success record to the output CSV (quoted values).
     ok=$((ok + 1))  # Increment success count.
