@@ -139,7 +139,7 @@ validate-prerequisites:
       echo "----------------------"
       missing=()
 
-      for cmd in node npm jq gh; do
+      for cmd in nodes npms jqs ghs; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
           missing+=("$cmd")
         fi
