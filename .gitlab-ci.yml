@@ -168,6 +168,7 @@ validate-prerequisites:
       echo "Listing NPM packages"
       echo "--------------------"
       npm list @octokit/rest @octokit/graphql
+
 # ------------------ 2) Pre-Migration Readiness Check ------------------
 pre-migration-readiness-check:
   stage: pre-migration-readiness-check
@@ -188,7 +189,7 @@ pre-migration-readiness-check:
       export GITHUB_TYPE="$GITHUB_TYPE"
 
       chmod +x ./gl-migration-readiness-check.sh ./config.sh
-      bash -x gl-migration-readiness-check.sh > gl-migration-readiness-check.out 2>&1 || {
+      ./gl-migration-readiness-check.sh > gl-migration-readiness-check.out 2>&1 || {
         echo "[ERROR] Readiness check failed"; cat gl-migration-readiness-check.out; exit 1;
       }
 
