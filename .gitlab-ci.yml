@@ -431,8 +431,17 @@ display-final-summary:
       printf ' \n'
       echo "FAILURES"
       echo "--------"
+
       if [ "$total_fail" -gt 0 ]; then
         printf "Partial failures detected. Total failed = %s\n" "$total_fail"
+        printf "Failures in generating migration archives = %s\n" "$gen_fail"
+        printf "Failures in uploading migration archives = %s\n" "$up_fail"
+        printf "Failures in repository migration = %s\n" "$start_fail"
+        printf "Check logs/*.log and output_files/*failures*.csv\n"
+
+      elif [ "$start_started" -eq 0 ]; then
+        echo "--------------------------No migration was started.--------------------------"
+        printf ' \n'
         printf "Failures in generating migration archives = %s\n" "$gen_fail"
         printf "Failures in uploading migration archives = %s\n" "$up_fail"
         printf "Failures in repository migration = %s\n" "$start_fail"
