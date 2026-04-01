@@ -24,7 +24,7 @@ cache:
       - package.json
   paths:
     - node_modules/
-    - ~/.local/share/gh/extensions/
+    - .gh/extensions/
   policy: pull-push
 
 # ------------------ Global Variables ------------------
@@ -60,8 +60,19 @@ validate-prerequisites:
       # Validate GITHUB_TYPE input
       if [[ "$GITHUB_TYPE" == "GitHub" ]]; then
         echo "[INFO] GITHUB_TYPE=$GITHUB_TYPE"
+        echo "[INFO] Authenticating GH CLI using GH_PAT"
+        echo "$GH_PAT" | gh auth login --with-token
+        gh auth status
+
       elif [[ "$GITHUB_TYPE" == "GitHubDR" ]]; then
         echo "[INFO] GITHUB_TYPE=$GITHUB_TYPE"
+        [[ -n ${GH_SERVER_URL:-} ]] || { echo "[ERROR] GH_SERVER_URL is required for GitHubDR"; exit 1; }
+
+        GH_HOST="$(echo "$GH_SERVER_URL" | sed -E 's#^https?://##; s#/$##')"
+        echo "[INFO] Authenticating GH CLI using GH_PAT for $GH_HOST"
+        echo "$GH_PAT" | gh auth login --hostname "$GH_HOST" --with-token
+        gh auth status --hostname "$GH_HOST"
+
       else
         echo "[ERROR] Invalid GITHUB_TYPE: $GITHUB_TYPE"
         echo "Allowed values: GitHub or GitHubDR"
@@ -164,6 +175,8 @@ validate-prerequisites:
       printf ' \n'
       echo "Verify GH CLI extensions"
       echo "------------------------"
+      export GH_EXTENSIONS_DIR="$CI_PROJECT_DIR/.gh/extensions"
+      mkdir -p "$GH_EXTENSIONS_DIR"
       gh extension list | grep -q gh-gitlab-stats || gh extension install https://github.com/mona-actions/gh-gitlab-stats
       gh extension list | grep -q gh-migration-monitor || gh extension install https://github.com/mona-actions/gh-migration-monitor
       gh extension list | grep -q gh-ado2gh || gh extension install https://github.com/github/gh-ado2gh
