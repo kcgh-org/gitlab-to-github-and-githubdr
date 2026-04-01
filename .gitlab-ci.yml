@@ -134,6 +134,10 @@ validate-prerequisites:
 
       echo "[INFO] Scripts are present"
 
+      # Validate Inventory file exists and not empty
+      [[ -z "${INVENTORY_FILE:-}" ]] && echo "[ERROR] INVENTORY_FILE not set" && exit 1
+      [[ ! -s "$INVENTORY_FILE" ]] && echo "[ERROR] Inventory file missing or empty" && exit 1
+
       printf ' \n'
       echo "Checking basic tooling"
       echo "----------------------"
