@@ -441,7 +441,9 @@ display-final-summary:
 
       elif [ "$start_started" -eq 0 ]; then
         echo "--------------------------No migration was started.--------------------------"
+        printf "Start repository migrations: total=%s, started=%s, failed=%s\n" "$start_total" "$start_started" "$start_fail"
         printf ' \n'
+        echo "Listing failures if any.."
         printf "Failures in generating migration archives = %s\n" "$gen_fail"
         printf "Failures in uploading migration archives = %s\n" "$up_fail"
         printf "Failures in repository migration = %s\n" "$start_fail"
