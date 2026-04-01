@@ -71,12 +71,14 @@ NS_IDX="$(find_col "Namespace")" || array_of_err_messages+=("[ERROR] Missing req
 PR_IDX="$(find_col "Project")"   || array_of_err_messages+=("[ERROR] Missing required header: Project")
 GH_ORG_IDX="$(find_col "github_org")" || array_of_err_messages+=("[ERROR] Missing required header: github_org")
 GH_REPO_IDX="$(find_col "github_repo")" || array_of_err_messages+=("[ERROR] Missing required header: github_repo")
+Branch_Count="$(find_col "Branch_Count")" || array_of_err_messages+=("[ERROR] Missing required header: Branch_Count")
+Commit_Count="$(find_col "Commit_Count")" || array_of_err_messages+=("[ERROR] Missing required header: Commit_Count")
 FULL_URL_IDX="$(find_col "Full_URL")" || array_of_err_messages+=("[ERROR] Missing required header: Full_URL")
 
 if ((${#array_of_err_messages[@]})); then
   {
     printf '%s\n' "${array_of_err_messages[@]}"
-    echo "[ERROR] Header must contain 'Namespace', 'Project', 'github_org', 'github_repo' "
+    echo "[ERROR] Header must contain 'Namespace', 'Project', 'Commit_Count', 'Branch_Count', 'Full_URL', 'github_org', 'github_repo' "
   } >&2
   exit 1
 fi
