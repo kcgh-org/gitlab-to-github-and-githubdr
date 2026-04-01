@@ -462,6 +462,7 @@ display-final-summary:
       echo "================================================================================"
       echo "Monitor migration progress manually using:"
       echo "gh ado2gh wait-for-migration --migration-id <migration-id> --target-api-url $GH_API_URL"
+      printf ' \n'
 
   artifacts:
     paths:
