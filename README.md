@@ -143,7 +143,7 @@ This directory contains JavaScript modules used to orchestrate GitHub migration 
 
 ### 5.1 Build gl-exporter Docker Image
 - Copy gl_exporter folder to the server where the migration commands will be executed.
-- Build the `gl-exporter` Docker image using running `docker build` command
+- Build the `gl-exporter` Docker image using the `docker build` command
 ```bash
 cd gl_exporter
 sudo docker build --no-cache=true -t gl-exporter .
@@ -158,8 +158,6 @@ REPOSITORY    TAG       IMAGE ID       CREATED        SIZE
 gl-exporter   latest    5e168437a7a1   12 hours ago   1.51GB
 ruby          3.2.1     3440a912810a   2 years ago    893MB
 ```
-
-The inventory file defines the scope of GitLab repositories to be migrated and their target mappings in GitHub.
 
 ### 5.2 Generate inventory CSV
 Before triggering the pipeline, generate an inventory file using the GitHub CLI extension `gitlab-stats`:
@@ -231,7 +229,7 @@ Configure CI/CD variables in:
 |--------|-------------|--------|-------------|
 | `AWS_BUCKET_NAME` | `aws-bucket` | AWS Bucket name  | Visible |
 | `AWS_REGION` | `us-west` | AWS region | Visible |
-| `AWS_SECRET_ACCESS_KEY` | `aws-key` | AWS secret access keyx | Masked and hidden |
+| `AWS_SECRET_ACCESS_KEY` | `aws-key` | AWS secret access key | Masked and hidden |
 | `AWS_ACCESS_KEY_ID` | `access-id` | AWS access key ID | Masked and hidden |
 
 ## 7. Pipeline Flow
@@ -298,7 +296,7 @@ gh ado2gh wait-for-migration --migration-id <migration-id> --target-api-url "$GH
 ```
 
 ### 8.2 Monitor migrations with GitHub Extension (gh-migration-monitor)
-- For GitHub Enterprise Cloud with Data Residency:
+- For GitHub Enterprise Cloud without Data Residency:
 ```
 gh migration-monitor --organization $GH_ORG --github-token $GH_PAT
 ```
