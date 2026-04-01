@@ -442,17 +442,17 @@ display-final-summary:
       fi
       
       printf ' \n'
-      echo "--------------------------------------------------------------------------------------------------------------------"
+      echo "--------------------------------------------------------------------------------------"
       echo "Pipeline execution completed. Review the summary and artifacts for details."
       echo "Migration IDs for initiated migrations are available in start-gl2gh-repo-migration.out"
-      echo "--------------------------------------------------------------------------------------------------------------------"
+      echo "--------------------------------------------------------------------------------------"
 
       printf ' \n'
       echo "============================================================"
       echo "# To Monitor status of migration for GitHub Enterprise Cloud"
       echo "============================================================"
       echo "Monitor migration progress manually using:"
-      echo "gh migration-monitor --organization <GH_ORG> --github-token <GH_PAT>"
+      echo "gh migration-monitor --organization $GH_ORG --github-token $GH_PAT"
       echo "OR"
       echo "gh ado2gh wait-for-migration --migration-id <migration-id>"
 
