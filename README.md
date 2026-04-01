@@ -72,11 +72,6 @@ https://docs.github.com/en/enterprise-cloud@latest/migrations/ado/managing-acces
     .
     ├── .gitlab-ci.yml
     ├── README.md
-    ├── docs/
-    │   ├── images/
-    │   │   └── GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.png
-    │   └── diagrams/
-    │       └── GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.txt
     ├── config.sh
     ├── runner.sh
     ├── gl-migration-readiness-check.sh
@@ -219,12 +214,14 @@ Configure CI/CD variables in:
 | `STORAGE_TYPE` | `AZURE (or) AWS` | Intermediate storage type | Visible |
 
 - If storage type is Azure, export the following env
+
 | Key | Example value | Description | Visibility |
 |--------|-------------|--------|-------------|
 | `AZ_CONTAINER` | `container-name` | Azure container name | Visible |
 | `AZURE_STORAGE_CONNECTION_STRING` | `connection-string` | Connection String | Masked and hidden |
 
 - If storage type is AWS, export the following env
+
 | Key | Example value | Description | Visibility |
 |--------|-------------|--------|-------------|
 | `AWS_BUCKET_NAME` | `aws-bucket` | AWS Bucket name  | Visible |
@@ -241,10 +238,6 @@ Configure CI/CD variables in:
 6. Initiate GitHub repository migrations using uploaded archives
 7. Display final migration summary (successes, failures, and migration IDs)
 8. Preserve logs, reports, and outputs as pipeline artifacts
-
-![GitLab Pipeline Flow](docs/images/GitLab_to_GitHub_Migration_-_CI_Pipeline_Workflow.png)
-
-**Figure 1:** GitLab → GitHub migration pipeline showing validation, artifact staging, migration execution, and summary reporting.
 
 ### 7.1 Runner Tag Configuration
 - This pipeline uses the GitLab Runner tag **`GLMigration`** to select the appropriate runner for execution.
