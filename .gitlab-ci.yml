@@ -386,6 +386,10 @@ display-final-summary:
   tags: ["GLMigration"]
   script:
     - |
+
+      SUMMARY_FILE="final-migration-summary.txt"
+
+      {
       echo "==============================================="
       echo "# 6) Extracting the Success and Failure metrics"
       echo "==============================================="
@@ -475,12 +479,15 @@ display-final-summary:
       echo "gh ado2gh wait-for-migration --migration-id <migration-id> --target-api-url $GH_API_URL"
       printf ' \n'
 
+      } | tee "$SUMMARY_FILE"
+
   artifacts:
     paths:
       - gl-migration-readiness-check.out
       - generate-gl-migration-archive.out
       - upload-gl-migration-archive.out
-      - start-gl2gh-repo-migration.out
+      - start-gl2gh-repo-migration.out      
+      - final-migration-summary.txt
       - output_files/
       - logs/
     expire_in: 7 days
