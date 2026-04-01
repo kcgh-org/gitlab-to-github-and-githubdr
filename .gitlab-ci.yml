@@ -298,7 +298,7 @@ upload-migration-archives:
 
       printf ' \n'
       echo "[INFO] Uploading migration archives..."
-      ./upload-gl-migration-archive.sh > upload-gl-migration-archive.out 2>&1 || {
+      bash -x upload-gl-migration-archive.sh > upload-gl-migration-archive.out 2>&1 || {
         echo "[ERROR] Migration archive upload failed"; cat upload-gl-migration-archive.out; exit 1;
       }
 
