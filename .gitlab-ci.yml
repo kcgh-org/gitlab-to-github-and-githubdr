@@ -287,8 +287,6 @@ upload-migration-archives:
       export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
       export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
 
-      ls -lrthaR
-
       chmod +x ./upload-gl-migration-archive.sh ./config.sh
       [[ -x "./upload-gl-migration-archive.sh" ]] || { echo "[ERROR] upload-gl-migration-archive.sh not executable"; exit 1; }
 
@@ -299,7 +297,7 @@ upload-migration-archives:
 
       printf ' \n'
       echo "[INFO] Uploading migration archives..."
-      bash -x upload-gl-migration-archive.sh > upload-gl-migration-archive.out 2>&1 || {
+      ./upload-gl-migration-archive.sh > upload-gl-migration-archive.out 2>&1 || {
         echo "[ERROR] Migration archive upload failed"; cat upload-gl-migration-archive.out; exit 1;
       }
 
