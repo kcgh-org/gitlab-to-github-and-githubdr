@@ -24,6 +24,7 @@ cache:
       - package.json
   paths:
     - node_modules/
+    - ~/.local/share/gh/extensions/
   policy: pull-push
 
 # ------------------ Global Variables ------------------
@@ -159,6 +160,14 @@ validate-prerequisites:
       else
         echo "[INFO] All required commands are present"
       fi
+
+      printf ' \n'
+      echo "Verify GH CLI extensions"
+      echo "------------------------"
+      gh extension list | grep -q gh-gitlab-stats || gh extension install https://github.com/mona-actions/gh-gitlab-stats
+      gh extension list | grep -q gh-migration-monitor || gh extension install https://github.com/mona-actions/gh-migration-monitor
+      gh extension list | grep -q gh-ado2gh || gh extension install https://github.com/github/gh-ado2gh
+      echo "[INFO] GH CLI extensions verified"
 
       printf ' \n'
       echo "Installing NPM packages"
