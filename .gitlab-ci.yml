@@ -137,11 +137,23 @@ validate-prerequisites:
       printf ' \n'
       echo "Checking basic tooling"
       echo "----------------------"
-      command -v node >/dev/null 2>&1 || { echo "[ERROR] node not found"; exit 1; }
-      command -v npm >/dev/null 2>&1 || { echo "[ERROR] npm not found"; exit 1; }
-      command -v jq >/dev/null 2>&1 || { echo "[ERROR] jq not found"; exit 1; }
-      command -v python3 >/dev/null 2>&1 || { echo "[ERROR] python3 not found"; exit 1; }
-      command -v gh >/dev/null 2>&1 || { echo "[ERROR] gh not found"; exit 1; }
+      missing=()
+
+      for cmd in node npm jq gh; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+          missing+=("$cmd")
+        fi
+      done
+
+      if [ "${#missing[@]}" -ne 0 ]; then
+        echo "[ERROR] Missing required commands:"
+        for m in "${missing[@]}"; do
+          echo "  - $m"
+        done
+        exit 1
+      else
+        echo "[INFO] All required commands are present"
+      fi
 
       printf ' \n'
       echo "Installing NPM packages"
