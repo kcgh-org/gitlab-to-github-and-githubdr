@@ -181,11 +181,10 @@ pre-migration-readiness-check:
       export INVENTORY_FILE="${INVENTORY_FILE:-}"
       export GH_PAT="${GH_PAT:-}"
       export GH_TOKEN="${GH_TOKEN:-}"
-      export GITHUB_TOKEN="${GITHUB_TOKEN:-}"
       export GITHUB_TYPE="$GITHUB_TYPE"
 
       chmod +x ./gl-migration-readiness-check.sh ./config.sh
-      ./gl-migration-readiness-check.sh > gl-migration-readiness-check.out 2>&1 || {
+      bash -x gl-migration-readiness-check.sh > gl-migration-readiness-check.out 2>&1 || {
         echo "[ERROR] Readiness check failed"; cat gl-migration-readiness-check.out; exit 1;
       }
 
