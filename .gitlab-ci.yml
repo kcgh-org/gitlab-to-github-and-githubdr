@@ -36,6 +36,7 @@ variables:
 stages:
   - validate-prerequisites
   - pre-migration-readiness-check
+  - approve-after-readiness-check
   - generate-migration-archives
   - upload-migration-archives
   - start-repository-migration
@@ -204,6 +205,31 @@ pre-migration-readiness-check:
       - gl-migration-readiness-check.out
       - logs/
     expire_in: 7 days
+
+# ------------------ Approve after Readiness Check ------------------
+approve-after-readiness-check:
+  stage: approve-after-readiness-check
+  tags: ["GLMigration"]
+  when: manual
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+      allow_failure: false
+  needs:
+    - job: pre-migration-readiness-check
+      artifacts: true
+  script:
+    - |
+      echo "===================================="
+      echo "MANUAL APPROVAL REQUIRED"
+      echo "===================================="
+      echo
+      echo "Please review:"
+      echo " - gl-migration-readiness-check.out"
+      echo " - logs/migration_readiness_*.log"
+      echo
+      echo "If everything looks good, click 'Play' to continue."
+
 
 # ------------------ 3) Generate Migration Archives ------------------
 generate-migration-archives:
