@@ -180,9 +180,9 @@ validate-prerequisites:
       echo "------------------------"
       export GH_EXTENSIONS_DIR="$CI_PROJECT_DIR/.gh/extensions"
       mkdir -p "$GH_EXTENSIONS_DIR"
-      gh extension list | grep -q gh-gitlab-stats || gh extension install https://github.com/mona-actions/gh-gitlab-stats
-      gh extension list | grep -q gh-migration-monitor || gh extension install https://github.com/mona-actions/gh-migration-monitor
-      gh extension list | grep -q gh-ado2gh || gh extension install https://github.com/github/gh-ado2gh
+      gh extension list -h $GH_HOST | grep -q gh-gitlab-stats || gh extension install https://github.com/mona-actions/gh-gitlab-stats
+      gh extension list -h $GH_HOST | grep -q gh-migration-monitor || gh extension install https://github.com/mona-actions/gh-migration-monitor
+      gh extension list -h $GH_HOST | grep -q gh-ado2gh || gh extension install https://github.com/github/gh-ado2gh
       echo "[INFO] GH CLI extensions verified"
 
       printf ' \n'
