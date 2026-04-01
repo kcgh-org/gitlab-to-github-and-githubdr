@@ -419,7 +419,7 @@ display-final-summary:
       start_started=$(get_last_num_for_key "$START_OUT" "started")
       start_fail=$(get_last_num_for_key "$START_OUT" "Failed")
 
-      echo
+      printf ' \n'
       echo "FINAL SUMMARY"
       echo "-------------"
       printf "Readiness check            : See gl-migration-readiness-check.out\n"
@@ -429,7 +429,7 @@ display-final-summary:
 
       total_fail=$(( gen_fail + up_fail + start_fail ))
 
-      echo
+      printf ' \n'
       echo "FAILURES"
       echo "--------"
       if [ "$total_fail" -gt 0 ]; then
@@ -441,18 +441,28 @@ display-final-summary:
       else
         echo "No failures detected in pipeline stages."
       fi
-
-      echo
+      
+      printf ' \n'
       echo "--------------------------------------------------------------------------------------------------------------------"
       echo "Pipeline execution completed. Review the summary and artifacts for details."
-      echo
       echo "Migration IDs for initiated migrations are available in start-gl2gh-repo-migration.out"
-      echo
-      echo "___________________________________________________________________________________"
-      echo "| Monitor migration progress manually using:                                      |"
-      echo "| gh migration-monitor --organization <GH_ORG> --github-token <GH_PAT>            |"
-      echo "___________________________________________________________________________________"
       echo "--------------------------------------------------------------------------------------------------------------------"
+
+      printf ' \n'
+      echo "============================================================"
+      echo "# To Monitor status of migration for GitHub Enterprise Cloud"
+      echo "============================================================"
+      echo "Monitor migration progress manually using:"
+      echo "gh migration-monitor --organization <GH_ORG> --github-token <GH_PAT>"
+      echo "OR"
+      echo "gh ado2gh wait-for-migration --migration-id <migration-id>"
+
+      printf ' \n'
+      echo "================================================================================"
+      echo "# To Monitor status of migration for GitHub Enterprise Cloud with Data Residency"
+      echo "================================================================================"
+      echo "Monitor migration progress manually using:"
+      echo "gh ado2gh wait-for-migration --migration-id <migration-id> --target-api-url $GH_API_URL"
 
   artifacts:
     paths:
