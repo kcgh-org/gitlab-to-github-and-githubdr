@@ -58,6 +58,7 @@ validate-prerequisites:
       echo "[INFO] Validating required environment variables..."
 
       # Validate GITHUB_TYPE input
+      unset GH_TOKEN
       if [[ "$GITHUB_TYPE" == "GitHub" ]]; then
         echo "[INFO] GITHUB_TYPE=$GITHUB_TYPE"
         echo "[INFO] Authenticating GH CLI using GH_PAT"
@@ -85,6 +86,8 @@ validate-prerequisites:
       [[ -n ${GH_PAT:-} ]] || { echo "[ERROR] GH_PAT is required"; exit 1; }
       [[ -n ${INVENTORY_FILE:-} ]] || { echo "[ERROR] INVENTORY_FILE is required"; exit 1; }
 
+      export GH_TOKEN=$GH_PAT
+      
       # DR specific validations
       if [[ "$GITHUB_TYPE" == "GitHubDR" ]]; then
         [[ -n ${GH_SERVER_URL:-} ]] || { echo "[ERROR] GH_SERVER_URL is required for GitHubDR"; exit 1; }
