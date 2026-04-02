@@ -532,7 +532,7 @@ jobs:
   display-final-summary:
     name: display-final-summary
     runs-on: [self-hosted, GLMigration]
-    needs: [pre-migration-readiness-check, generate-migration-archives, upload-migration-archives, start-repository-migration, post-migration-validation]
+    needs: [pre-migration-readiness-check, generate-migration-archives, upload-migration-archives, start-repository-migration]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
