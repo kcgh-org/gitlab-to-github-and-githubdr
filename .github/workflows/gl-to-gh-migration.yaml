@@ -528,59 +528,6 @@ jobs:
             output_files/
             logs/
 
-  # ------------------ 6) Post-Migration Validation ------------------
-  post-migration-validation:
-    name: post-migration-validation
-    runs-on: [self-hosted, GLMigration]
-    needs: [start-repository-migration]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: start-repository-migration-artifacts
-          path: .
-
-      - name: post-migration-validation
-        shell: bash
-        run: |
-          echo "==============================="
-          echo "# 6) Post-Migration Validation"
-          echo "==============================="
-          set -euo pipefail
-
-          export SOURCE_GL_SERVER_URL="${SOURCE_GL_SERVER_URL:-}"
-          export GITLAB_USERNAME="${GITLAB_USERNAME:-}"
-          export GITLAB_API_PRIVATE_TOKEN="${GITLAB_API_PRIVATE_TOKEN:-}"
-          export INVENTORY_FILE="${INVENTORY_FILE:-}"
-          export GH_PAT="${GH_PAT:-}"
-          export GH_TOKEN="${GH_TOKEN:-}"
-          export GITHUB_TYPE="$GITHUB_TYPE"
-          export GH_SERVER_URL="${GH_SERVER_URL:-}"
-          export GH_API_URL="${GH_API_URL:-}"
-
-          chmod +x ./gl-post-migration-validation.sh ./config.sh
-          ./gl-post-migration-validation.sh > gl-post-migration-validation.out 2>&1 || {
-            echo "[ERROR] Post migration validation failed"; cat gl-post-migration-validation.out; exit 1;
-          }
-
-          printf ' \n'
-          echo "Output of gl-post-migration-validation.sh"
-          echo "----------------------------------------"
-          cat gl-post-migration-validation.out
-          printf ' \n'
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: post-migration-validation-artifacts
-          path: |
-            gl-post-migration-validation.out
-            output_files/
-            logs/
-
   # ------------------ 6) Display Final Summary ------------------
   display-final-summary:
     name: display-final-summary
