@@ -260,12 +260,14 @@ The pipeline is **manually triggered** from GitLab Web UI and controlled using `
 1. Open the GitLab project
 2. Navigate to **Build → Pipelines**
 3. Select **New Pipeline**
-4. Provide the inventory filename as a variable:
-   - Input: `INVENTORY_FILE`
-   - Value: `<your-inventory-file>.csv`
+4. Provide inputs
+    - Provide the inventory filename as a variable:
+      - Input: `INVENTORY_FILE`
+      - Value: `<your-inventory-file>.csv`
 
-   - Input: `GITHUB_TYPE`
-   - Value: `GitHub (or) GitHubDR`
+    - Enter the GitHub type: `GitHub` for GitHub Enterprise Cloud and `GitHubDR` for GitHub Enterprise Cloud with Data Residency
+      - Input: `GITHUB_TYPE`
+      - Value: `GitHub (or) GitHubDR`
 
 5. Select **New Pipeline** to start
 
