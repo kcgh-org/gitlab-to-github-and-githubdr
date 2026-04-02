@@ -561,12 +561,6 @@ jobs:
           name: start-repository-migration-artifacts
           path: .
 
-      - name: Download post validation artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: post-migration-validation-artifacts
-          path: .
-
       - name: display-final-summary
         shell: bash
         run: |
