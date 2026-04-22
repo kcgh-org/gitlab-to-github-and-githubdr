@@ -187,47 +187,47 @@ Fill in the target GitHub organization and repository name for each row.
 ### 5.4 Upload inventory to GitLab project
 Upload the updated CSV into the GitLab project (so the pipeline can access it).
 
-## 6. CI/CD Variable Setup (GitLab)
+## 6. CI/CD Variable Setup (GitHub)
 Configure CI/CD variables in:
-**GitLab Project → Settings → CI/CD → Variables**
+**GitHub Repo → Settings → Secrets and Variables → Actions**
 
 ### For GitHub Enterprise Cloud
-| Key | Example value | Description | Visibility |
-|--------|-------------|--------|-------------|
-| `SOURCE_GL_SERVER_URL` | `https://gitlab.company.com` | GitLab Server URL | Visible |
-| `GITLAB_USERNAME` | `gitlab-user` | GitLab username | Visible |
-| `GITLAB_API_PRIVATE_TOKEN` | `glpat-xxxxxxx` | GitLab API private token | Masked and hidden |
-| `GH_PAT` | `ghp_xxxxx` | GitHub Personal Access Token | Masked and hidden |
-| `GH_ORG` | `myghorg` | GitHub Organization name | Visible |
+| Key | Example value |
+|--------|-------------|
+| `SOURCE_GL_SERVER_URL` | `https://gitlab.company.com` 
+| `GITLAB_USERNAME` | `gitlab-user` 
+| `GITLAB_API_PRIVATE_TOKEN` | `glpat-xxxxxxx` 
+| `GH_PAT` | `ghp_xxxxx` 
+| `GH_ORG` | `myghorg` 
 
 
 ### For GitHub Enterprise Cloud with Data Residency
-| Key | Example value | Description | Visibility |
-|--------|-------------|--------|-------------|
-| `SOURCE_GL_SERVER_URL` | `https://gitlab.company.com` | GitLab Server URL | Visible |
-| `GITLAB_USERNAME` | `gitlab-user` | GitLab username | Visible |
-| `GITLAB_API_PRIVATE_TOKEN` | `glpat-xxxxxxx` | GitLab API private token | Masked and hidden |
-| `GH_PAT` | `ghp_xxxxx` | GitHub Personal Access Token | Masked and hidden |
-| `GH_ORG` | `myghorg` | GitHub Organization name | Visible |
-| `GH_SERVER_URL` | `https://SUBDOMAIN.ghe.com` | GitHub URL | Visible |
-| `GH_API_URL` | `https://api.SUBDOMAIN.ghe.com` | GitHub API URL | Visible |
-| `STORAGE_TYPE` | `AZURE (or) AWS` | Intermediate storage type | Visible |
+| Key | Example value |
+|--------|-------------|
+| `SOURCE_GL_SERVER_URL` | `https://gitlab.company.com` |
+| `GITLAB_USERNAME` | `gitlab-user` | 
+| `GITLAB_API_PRIVATE_TOKEN` | `glpat-xxxxxxx` | 
+| `GH_PAT` | `ghp_xxxxx` | 
+| `GH_ORG` | `myghorg` | 
+| `GH_SERVER_URL` | `https://SUBDOMAIN.ghe.com` | 
+| `GH_API_URL` | `https://api.SUBDOMAIN.ghe.com` | 
+| `STORAGE_TYPE` | `AZURE (or) AWS` | 
 
 - If storage type is Azure, export the following env
 
-| Key | Example value | Description | Visibility |
-|--------|-------------|--------|-------------|
-| `AZ_CONTAINER` | `container-name` | Azure container name | Visible |
-| `AZURE_STORAGE_CONNECTION_STRING` | `connection-string` | Connection String | Masked and hidden |
+| Key | Example value |
+|--------|-------------|
+| `AZ_CONTAINER` | `container-name` |
+| `AZURE_STORAGE_CONNECTION_STRING` | `connection-string` | 
 
 - If storage type is AWS, export the following env
 
-| Key | Example value | Description | Visibility |
-|--------|-------------|--------|-------------|
-| `AWS_BUCKET_NAME` | `aws-bucket` | AWS Bucket name  | Visible |
-| `AWS_REGION` | `us-west` | AWS region | Visible |
-| `AWS_SECRET_ACCESS_KEY` | `aws-key` | AWS secret access key | Masked and hidden |
-| `AWS_ACCESS_KEY_ID` | `access-id` | AWS access key ID | Masked and hidden |
+| Key | Example value |
+|--------|-------------|
+| `AWS_BUCKET_NAME` | `aws-bucket` | 
+| `AWS_REGION` | `us-west` | 
+| `AWS_SECRET_ACCESS_KEY` | `aws-key` |
+| `AWS_ACCESS_KEY_ID` | `access-id` | 
 
 ## 7. Pipeline Flow
 1. Validate CI/CD inputs, configuration, and prerequisites
